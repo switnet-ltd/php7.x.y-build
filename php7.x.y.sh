@@ -125,6 +125,15 @@ case $response in
    1) MXMIND=no ;;
    255) echo "[ESC] key pressed.";;
 esac
+dialog --stdout --title "PHP Extension" \
+  --backtitle "PHP 7" \
+  --yesno "Do you need support for APCu?" 7 60
+response=$?
+case $response in
+   0) APCU=yes ;;
+   1) APCU=no ;;
+   255) echo "[ESC] key pressed.";;
+esac
 # Set variables for standar behavior
 php_release=$(curl -s https://www.php.net/downloads.php | grep "php-${rel}" | cut -d\> -f2 | grep ${rel} | head -n1 | cut -d "<" -f1 | awk -F '.tar.bz2' '{print $1}')
 # $rel var set by dialog
@@ -375,6 +384,7 @@ echo \
 ';;; Memcached ;;;
 extension=memcached.so' >> $php_path/lib/php.ini
 
+if [ "$APCU" = "yes" ]; then
 # APCu
 printf "\n${Yellow}Adding ACPU Support${Color_Off}\n
 Deleting previous builds"
@@ -391,6 +401,7 @@ apc.enabled=1
 apc.enable_cli=1
 apc.shm_size=128M
 apc.ttl=7200' >> $php_path/lib/php.ini
+fi
 
 # -xDebug
 #cd /opt/php-7.3.X/etc
