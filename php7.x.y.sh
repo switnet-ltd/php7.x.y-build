@@ -1,5 +1,7 @@
 #!/bin/bash
 #  php-7.x.y installer for Trisquel 8
+#  SwITNet Ltd © - 2019, https://switnet.net/
+#
 #  This script installs the build dependancies for php-7.x.y and looks
 #  for previous installations it's intended to be used with ISPConfig3.
 #
@@ -350,12 +352,12 @@ cd $redis_path ; $php_bin/phpize
 PATH=$php_bin:$PATH ./configure -q
 make -s
 make install
-cat  << PHP_P1 >> $php_path/lib/php.ini
+cat  << PHP_RS >> $php_path/lib/php.ini
 ;;; Redis ;;;
 extension=redis.so
 ;;; OPCache ;;;
 zend_extension=opcache.so
-PHP_P1
+PHP_RS
 
 #IMagick
 printf "\n${Yellow}Adding IMagick Support${Color_Off}\n
@@ -394,13 +396,14 @@ cd $apcu_path ; $php_bin/phpize
 PATH=$php_bin:$PATH ./configure --with-php-config=$php_bin/php-config -q
 make -s
 make install
-echo \
-';;; APCu ;;;
+cat  << PHP_AU >> $php_path/lib/php.ini
+;;; APCu ;;;
 extension=apcu.so
 apc.enabled=1
 apc.enable_cli=1
 apc.shm_size=128M
-apc.ttl=7200' >> $php_path/lib/php.ini
+apc.ttl=7200
+PHP_AU
 fi
 
 # -xDebug
