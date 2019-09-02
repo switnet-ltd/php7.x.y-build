@@ -610,6 +610,7 @@ create_symlink() {
 }
 
 pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Az]*||g' | sed 's|build||')
+rm -rf /usr/bin/php${pbin}
 create_symlink /opt/php-${brel}/bin/php /usr/bin/php${pbin}
 ls -l /usr/bin/php${pbin}
 
