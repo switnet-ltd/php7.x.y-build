@@ -338,6 +338,10 @@ ExecReload=/bin/kill -USR2 \$MAINPID
 [Install]
 WantedBy=multi-user.target
 SYSTEMD
+
+#Remove build info
+rm -rf /usr/local/src/php5-build/php-${brel} 2>/dev/null
+
 chmod 755 /lib/systemd/system/php-${brel}-fpm.service
 systemctl enable php-${brel}-fpm.service
 systemctl start php-${brel}-fpm.service
@@ -607,13 +611,9 @@ create_symlink() {
 		ln -s $1 $2
 	fi
 }
-clear_name {
-	pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Az]*||g' | sed 's|build||')
-}
 
-clear_name
+pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Az]*||g' | sed 's|build||')
 create_symlink /opt/php-${brel}/bin/php /usr/bin/php${pbin}
-
 ls -l /usr/bin/php${pbin}
 
 printf "${Blue}
