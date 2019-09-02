@@ -238,7 +238,7 @@ printf "${Yellow}Removing previous ${brel} release..${Color_Off}\n"
 update-rc.d php-${brel}-fpm disable 2>/dev/null
 systemctl stop php-${brel}-fpm 2>/dev/null
 systemctl disable php-${brel}-fpm 2>/dev/null
-rm -rf /usr/local/src/php5-build/php* 2>/dev/null
+rm -rf /usr/local/src/php5-build/php-${brel} 2>/dev/null
 rm -rf $php_path 2>/dev/null
 rm -rf /etc/init.d/php-${brel}-fpm 2>/dev/null
 rm -rf /usr/local/src/php5-build/php-${brel}.tar.bz2 2>/dev/null
@@ -600,6 +600,21 @@ fi
 service nc_php-${nrel}-fpm restart && \
 service apache2 restart
 fi
+
+echo "Creating symlinks..."
+create_symlink() {
+	if [ -f $1 ]; then
+		ln -s $1 $2
+	fi
+}
+clear_name {
+	pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Az]*||g' | sed 's|build||')
+}
+
+clear_name
+create_symlink /opt/php-${brel}/bin/php /usr/bin/php${pbin}
+
+ls -l /usr/bin/php${pbin}
 
 printf "${Blue}
 ########################################################################
