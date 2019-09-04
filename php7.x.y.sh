@@ -609,10 +609,14 @@ create_symlink() {
 	fi
 }
 
-pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Az]*||g' | sed 's|build||')
-rm -rf /usr/bin/php${pbin}
-create_symlink /opt/php-${brel}/bin/php /usr/bin/php${pbin}
-ls -l /usr/bin/php${pbin}
+pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Zz]*||g' | sed 's|build||')
+if [ -z $pbin ]; then
+	echo "Seems there is an issue with symlink variable, skiping for now..."
+else
+	rm -rf /usr/bin/php${pbin}
+	create_symlink /opt/php-${brel}/bin/php /usr/bin/php${pbin}
+	ls -l /usr/bin/php${pbin}
+fi
 
 #Remove build info
 rm -rf /usr/local/src/php5-build/php-${brel} 2>/dev/null
