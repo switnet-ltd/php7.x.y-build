@@ -609,7 +609,7 @@ create_symlink() {
 	fi
 }
 
-pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^0-9^Aa-Zz]*||g' | sed 's|build||')
+pbin=$(echo ${brel} | awk '{print tolower($0)}' | sed 's|[^[:alnum:]/]\+||g' | sed 's|build||')
 if [ -z $pbin ]; then
 	echo "Seems there is an issue with symlink variable, skiping for now..."
 else
