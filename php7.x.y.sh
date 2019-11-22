@@ -558,7 +558,7 @@ NC_PHP
 
 # Update Nextcloud limits
 sed -i "s|memory_limit = .*|memory_limit = 512M|" $PHP_INI
-sed -I "s|upload_max_filesize = .*|upload_max_filesize = 511M|" $PHP_INI
+sed -i "s|upload_max_filesize = .*|upload_max_filesize = 511M|" $PHP_INI
 
 cat << NC_SYSTEM_PHP > "$NC_SYSTEM_FILE"
 [Unit]
