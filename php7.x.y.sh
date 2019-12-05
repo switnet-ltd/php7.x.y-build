@@ -55,7 +55,7 @@ Good, this is a supported platform!\n"
 else
 	printf "OS: ${Blue} $(lsb_release -sd) ${Color_Off}
 Sorry, this platform is not supported... exiting\n"
-exit 1
+exit
 fi
 apt update -q2
 install_ifnot autoconf
@@ -110,7 +110,7 @@ esac
 if [ "$rel" = "7.3" ]; then
 dialog --stdout --title "PHP Build Mode" \
   --backtitle "PHP 7" \
-  --yesno "Is this a Nextcloud instance?" 7 60
+  --yesno "Is this a standalone Nextcloud instance? (not shared hosted)" 7 60
 response=$?
 case $response in
    0) NC_BUILD=yes ;;
