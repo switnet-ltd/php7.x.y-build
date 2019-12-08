@@ -49,7 +49,10 @@ DIST=$(lsb_release -sc)
 if [ $DIST = flidas ]; then
 	DIST="xenial"
 fi
-if [ "$DIST" = "xenial" ]; then
+if [ $DIST = etiona ]; then
+	DIST="bionic"
+fi
+if [ "$DIST" = "xenial" ] || [ "$DIST" = "bionic" ]; then
 	printf "OS: ${Blue} $(lsb_release -sd) ${Color_Off}
 Good, this is a supported platform!\n"
 else
@@ -79,6 +82,7 @@ Choose one of the following supported PHP releases:"
 OPTIONS=(1 "7.1.X"
          2 "7.2.X"
          3 "7.3.X"
+         4 "7.4.X"
          )
 
 CHOICE=$(dialog --clear \
@@ -102,15 +106,19 @@ case $CHOICE in
             printf "We'll schedule build of: ${Green} 7.3.X ${Color_Off}\n"
             rel="7.3"
             ;;
+        4)
+            printf "We'll schedule build of: ${Green} 7.4.X ${Color_Off}\n"
+            rel="7.4"
+            ;;
         *)
             printf "Operation canceled, exiting...\n"
             exit
             ;;
 esac
-if [ "$rel" = "7.3" ]; then
+if [ "$rel" = "7.3" ] || [ "$rel" = "7.4" ]; then
 dialog --stdout --title "PHP Build Mode" \
   --backtitle "PHP 7" \
-  --yesno "Is this a standalone Nextcloud instance? (not shared hosted)" 7 60
+  --yesno "Is this a standalone Nextcloud instance? (NOT shared hosted)" 7 60
 response=$?
 case $response in
    0) NC_BUILD=yes ;;
@@ -168,6 +176,7 @@ if [ -z "$srv_run" ]; then
 	echo "Ok, come back when you are ready."
 	exit
 	elif [ $cont = yes ]; then
+	mbuild=no
 	echo "Let's get to it ..."
 	fi
 	done
@@ -213,11 +222,26 @@ apcu_path=$php_path/php-acpu-${brel}
 php_bin=$php_path/bin
 
 printf "${Yellow}# Installing dependencies...${Color_Off}\n"
+if  [ "$DIST" = "xenial" ]; then
 apt -yqq install libfcgi-dev libfcgi0ldbl libjpeg62-dbg libmcrypt-dev \
 libssl-dev libc-client2007e libc-client2007e-dev libxml2-dev libbz2-dev \
 libjpeg-dev libpng12-dev libfreetype6-dev libreadline-dev \
 libkrb5-dev libpq-dev libxml2-dev libxslt1-dev libzip-dev libmemcached-dev \
 libcurl4-openssl-dev &>/dev/null
+fi
+
+if  [[ "$DIST" = "xenial" && "$rel" = "7.4" ]]; then
+apt -yqq install libsqlite3-dev libonig-dev pkg-config
+fi
+
+if [ "$DIST" = "bionic" ]; then
+apt -yqq install libfcgi-dev libfcgi0ldbl libjpeg-turbo8-dev libmcrypt-dev \
+libssl-dev libc-client2007e libc-client2007e-dev libxml2-dev libbz2-dev \
+libcurl4-openssl-dev libjpeg-dev libpng-dev libfreetype6-dev libkrb5-dev \
+libpq-dev libxml2-dev libxslt1-dev libzip-dev libsqlite3-dev \
+libonig-dev &>/dev/null
+fi
+
 if [ -d /usr/include/curl ]; then
 echo "CURL symlink in place"
 else
@@ -259,6 +283,7 @@ rm -rf php-${brel}.tar.bz2
 mv $php_release php-${brel}
 cd php-${brel}/
 
+if [[ ${brel} =~ 7.[1-3].* ]]; then
 ./configure --prefix=$php_path --with-pdo-pgsql --with-zlib-dir \
 --with-freetype-dir --enable-mbstring --with-libxml-dir=/usr --enable-soap \
 --enable-calendar --with-curl --with-libzip --with-gd --enable-intl \
@@ -271,7 +296,22 @@ cd php-${brel}/
 --with-fpm-user=www-data --with-fpm-group=www-data \
 --with-libdir=/lib/x86_64-linux-gnu --enable-ftp --with-imap \
 --with-imap-ssl --with-kerberos --with-gettext --with-xmlrpc --with-xsl \
---enable-opcache --enable-fpm | grep "Thank you for using PHP."
+--enable-opcache --with-pear --enable-fpm | grep "Thank you for using PHP."
+fi
+
+if [[ ${brel} =~ 7.4.* ]]; then
+./configure --prefix=$php_path --with-pdo-pgsql --with-zlib-dir \
+--with-freetype --enable-mbstring --enable-soap --enable-calendar \
+--with-curl --with-zlib --enable-gd --with-pgsql --disable-rpath \
+--enable-inline-optimization --with-bz2 --with-zlib --enable-sockets \
+--enable-sysvsem --enable-sysvshm --enable-pcntl --enable-mbregex \
+--enable-exif --enable-bcmath --with-mhash --with-zip --with-pdo-mysql \
+--with-mysqli --with-mysql-sock=/var/run/mysqld/mysqld.sock --with-jpeg \
+--with-openssl --with-fpm-user=www-data --with-fpm-group=www-data \
+--with-libdir=/lib/x86_64-linux-gnu --enable-ftp --with-imap \
+--with-imap-ssl --with-kerberos --with-gettext --with-xmlrpc --with-xsl \
+--enable-opcache --enable-intl --with-pear --enable-fpm | grep "Thank you for using PHP."
+fi
 
 if [ $? == 0 ]; then
     printf "\n${Green}Configuration has succesfully finished, now let's do \`make\`. \
@@ -290,9 +330,12 @@ cp $php_path/etc/php-fpm.conf.default $php_path/etc/php-fpm.conf
 cp $php_path/etc/php-fpm.d/www.conf.default $php_path/etc/php-fpm.d/www.conf
 echo $php_release > $php_path/current-php
 
-#SO - PHP - 7.0.X =>  9000
+#SO - PHP - 7.0.X =>  9000 - Xenial
+#SO - PHP - 7.2.X =>  9000 - Bionic
 if [ ${brel} = "7.3.X_mbuild" ]; then
 	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8992|g' $php_path/etc/php-fpm.d/www.conf
+	UPORT=8995
+	MPORT=8992
 	#PHP Build 7.3.X_mbuild => 8992
 elif [ ${brel} = "7.2.X_mbuild" ]; then
 	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8993|g' $php_path/etc/php-fpm.d/www.conf
@@ -302,6 +345,8 @@ elif [ ${brel} = "7.1.X_mbuild" ]; then
 	#PHP Build 7.1.X_mbuild => 8994
 elif [ ${brel} = "7.3.X" ] && [ ${NC_BUILD} = "yes" ]; then
 	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8995|g' $php_path/etc/php-fpm.d/www.conf
+	UPORT=8995
+	MPORT=8992
 	#PHP Build 7.3.X => 8995
 elif [ ${brel} = "7.3.X" ]; then
 	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8996|g' $php_path/etc/php-fpm.d/www.conf
@@ -312,7 +357,17 @@ elif [ ${brel} = "7.2.X" ]; then
 elif [ ${brel} = "7.1.X" ]; then
 	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8998|g' $php_path/etc/php-fpm.d/www.conf
 	#PHP Build 7.1.X => 8998
-##PHP Build 5.6.X => 8999 - Deprecated
+##PHP Build 5.6.X => 8999 - Deprecated # Reusing for PHP 7.4
+elif [ ${brel} = "7.4.X_mbuild" ]; then
+	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8991|g' $php_path/etc/php-fpm.d/www.conf
+	UPORT=8999
+	MPORT=8991
+	#PHP Build 7.4.X_mbuild => 8991
+elif [ ${brel} = "7.4.X" ]; then
+	sed -i 's|listen = 127.0.0.1:9000|listen = 127.0.0.1:8999|g' $php_path/etc/php-fpm.d/www.conf
+	UPORT=8999
+	MPORT=8991
+	#PHP Build 7.4.X => 8999
 else
 	echo "No compatible version exiting.."
 	echo "Please report any issue to: https://switnet.net"
@@ -444,64 +499,56 @@ service apache2 restart
 ########################################################################
 if [ "${NC_BUILD}" = "yes" ]; then
 
-dialog --title "PHP 7.3.X services active" --msgbox \
-"$(netstat -lp | grep 899 | awk '{print $4}'| sed -e "s|localhost:8992|php-7.3.X_mbuild - Maintenance Build|" -e "s|localhost:8995|php-7.3.X - Production Build|")" \
+dialog --title "PHP ${brel} services active" --msgbox \
+"$(netstat -lp | grep 899 | awk '{print $4}'| sed -e "s|localhost:899[1,2]|php-${brel} - Maintenance Build|" -e "s|localhost:899[5,9]|php-${brel} - Production Build|")" \
 7 50
 #printf "${Cyan}$(netstat -lp | grep 899 | awk '{print $4}'| \
 #		sed -e "s|localhost:8992|php-7.3.X_mbuild - Maintenance Build|" -e \
 #		"s|localhost:8995|php-7.3.X - Production Build|")${Color_Off}\n"
 
 #Selector
-HEIGHT=15
-WIDTH=65
-CHOICE_HEIGHT=4
-BACKTITLE="PHP 7.3.X - Nextcloud"
-TITLE="PHP 7 - Selector"
-MENU="
-Select the PHP 7 you have previously build to use Nextcloud:"
+#HEIGHT=15
+#WIDTH=65
+#CHOICE_HEIGHT=4
+#BACKTITLE="PHP ${brel} - Nextcloud"
+#TITLE="PHP 7 - Selector"
+#MENU="
+#Select the PHP 7 you have previously build to use Nextcloud:"
+#
+#OPTIONS=(1 "7.3.X (Production)"
+#         2 "7.3.X_mbuild (Maintenance)"
+#         )
+#
+#CHOICE=$(dialog --clear \
+#                --backtitle "$BACKTITLE" \
+#                --title "$TITLE" \
+#                --menu "$MENU" \
+#                $HEIGHT $WIDTH $CHOICE_HEIGHT \
+#               "${OPTIONS[@]}" \
+#               3>&1 1>&2 2>&3 3>&- )
 
-OPTIONS=(1 "7.3.X (Production)"
-         2 "7.3.X_mbuild (Maintenance)"
-         )
+#case $CHOICE in
+#        1)
+#            printf "We'll schedule setup of: ${Green} 7.3.X ${Color_Off}\n"
+#            nrel="7.3.X"
+#            ;;
+#        2)
+#            printf "We'll schedule setup of: ${Green} 7.3.X_mbuild ${Color_Off}\n"
+#            nrel="7.3.X_mbuild"
+#           ;;
+#       *)
+#            printf "Operation canceled, exiting...\n"
+#            exit
+#            ;;
+#esac
 
-CHOICE=$(dialog --clear \
-                --backtitle "$BACKTITLE" \
-                --title "$TITLE" \
-                --menu "$MENU" \
-                $HEIGHT $WIDTH $CHOICE_HEIGHT \
-                "${OPTIONS[@]}" \
-                3>&1 1>&2 2>&3 3>&- )
-
-case $CHOICE in
-        1)
-            printf "We'll schedule setup of: ${Green} 7.3.X ${Color_Off}\n"
-            nrel="7.3.X"
-            ;;
-        2)
-            printf "We'll schedule setup of: ${Green} 7.3.X_mbuild ${Color_Off}\n"
-            nrel="7.3.X_mbuild"
-            ;;
-        *)
-            printf "Operation canceled, exiting...\n"
-            exit
-            ;;
-esac
-
-PHP_POOL_DIR=/opt/php-${nrel}/etc/php-fpm.d
-PHP_INI=/opt/php-${nrel}/lib/php.ini
-NC_SYSTEM_FILE=/lib/systemd/system/nc_php-${nrel}-fpm.service
+PHP_POOL_DIR=/opt/php-${brel}/etc/php-fpm.d
+PHP_INI=/opt/php-${brel}/lib/php.ini
+NC_SYSTEM_FILE=/lib/systemd/system/nc_php-${brel}-fpm.service
 mkdir /run/php
 average_php_memory_requirement=50
 available_memory=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
 PHP_FPM_MAX_CHILDREN=$((available_memory/average_php_memory_requirement))
-if [ "$nrel" = "7.3.X" ]; then
-UPORT=8995
-elif [ "$nrel" = "7.3.X_mbuild" ]; then
-UPORT=8992
-else
-echo "Port not defined"
-echo "Please report any issue to: https://switnet.net"
-fi
 
 calculate_max_children() {
 # Calculate max_children depending on RAM
@@ -517,13 +564,13 @@ else
 fi
 }
 calculate_max_children
-systemctl stop php-${nrel}-fpm.service
-systemctl disable php-${nrel}-fpm.service
+systemctl stop php-${brel}-fpm.service
+systemctl disable php-${brel}-fpm.service
 a2enmod proxy proxy_fcgi
 
 # Set up a php-fpm pool with a unixsocket
-cat << POOL_CONF > "$PHP_POOL_DIR/nextcloud_${nrel}.conf"
-[Nextcloud ${nrel} ]
+cat << POOL_CONF > "$PHP_POOL_DIR/nextcloud_${brel}.conf"
+[Nextcloud ${brel} ]
 user = www-data
 group = www-data
 listen = 127.0.0.1:$UPORT
@@ -558,7 +605,7 @@ NC_PHP
 
 # Update Nextcloud limits
 sed -i "s|memory_limit = .*|memory_limit = 512M|" $PHP_INI
-sed -i "s|upload_max_filesize = .*|upload_max_filesize = 511M|" $PHP_INI
+sed -i "s|upload_max_filesize = .*|upload_max_filesize = 1024M|" $PHP_INI
 
 cat << NC_SYSTEM_PHP > "$NC_SYSTEM_FILE"
 [Unit]
@@ -567,41 +614,33 @@ After=network.target
 
 [Service]
 Type=simple
-PIDFile=/opt/php-${nrel}/var/run/nc_php-fpm_${nrel}.pid
-ExecStart=/opt/php-${nrel}/sbin/php-fpm --nodaemonize --fpm-config $PHP_POOL_DIR/nextcloud_${nrel}.conf
+PIDFile=/opt/php-${brel}/var/run/nc_php-fpm_${brel}.pid
+ExecStart=/opt/php-${brel}/sbin/php-fpm --nodaemonize --fpm-config $PHP_POOL_DIR/nextcloud_${brel}.conf
 ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
 WantedBy=multi-user.target
 NC_SYSTEM_PHP
 
-chmod 755 /lib/systemd/system/nc_php-${nrel}-fpm.service
-systemctl enable nc_php-${nrel}-fpm.service
-systemctl start nc_php-${nrel}-fpm.service
+chmod 755 /lib/systemd/system/nc_php-${brel}-fpm.service
+systemctl enable nc_php-${brel}-fpm.service
+systemctl start nc_php-${brel}-fpm.service
 
 ##Set Apache2 file
-echo "We have found the following Nextcloud instances using PHP 7.3:"
-NC_INST="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 -le 8992)"
+echo "We have found the following Nextcloud instances using PHP $rel:"
+NC_INST="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 -le 8992 -le 8991 -le 8999)"
 printf "${Green}$NC_INST${Color_Off}\n"
 
-if [ "$nrel" = "7.3.X" ]; then
-	NC_2PROD="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8992)"
-	echo "We'll only configure:"
-	printf "${Blue}$NC_2PROD${Color_Off}\n"
-	read -p "Please confirm they are the ones to be configured, once you're ready presss [Enter] to complete the setup..."
-	grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8992 | xargs -L1 sed -i "s|8992|$UPORT|"
-elif [ "$nrel" = "7.3.X_mbuild" ]; then
-	NC_2MANT="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995)"
-	echo "We'll only configure:"
-	printf "${Blue}$NC_2MANT${Color_Off}\n"
-	read -p "Please confirm they are the ones to be configured, once you're ready presss [Enter] to complete the setup..."
-	grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 | xargs -L1 sed -i "s|8995|$UPORT|"
-else
-	echo "Apache not configured."
-	echo "Please report any issue to: https://switnet.net"
+if [[ ${brel} = 7.[3-4].X ]]; then
+		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|"
+	elif [[ ${brel} = 7.[3-4].X_mbuild ]]; then
+		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+	else 
+		echo "Error configuring apache, please report it."
 fi
 
-service nc_php-${nrel}-fpm restart && \
+
+service nc_php-${brel}-fpm restart && \
 service apache2 restart
 fi
 
