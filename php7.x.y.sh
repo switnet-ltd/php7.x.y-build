@@ -1,5 +1,5 @@
 #!/bin/bash
-#  php-7.x.y installer for Trisquel 8
+#  php-7.x.y installer for Trisquel / Ubuntu LTS
 #  SwITNet Ltd © - 2019, https://switnet.net/
 #
 #  This script installs the build dependancies for php-7.x.y and looks
@@ -486,9 +486,11 @@ printf "\n${Blue}$(./php -v)${Color_Off}\n"
 printf "${Red}$(./php --ri redis | head -n 7)${Color_Off}\n"
 printf "${Yellow}$(./php --ri imagick | head -n 10)${Color_Off}\n"
 printf "${Green}$(./php --ri memcached | head -n 6)${Color_Off}\n"
-printf "${Blue}$(./php --ri apcu | head -n 6)${Color_Off}\n"
+if [ "$APCU" = "yes" ]; then
+	printf "${Blue}$(./php --ri apcu | head -n 6)${Color_Off}\n"
+fi
 if [ "$MXMIND" = "yes" ]; then
-printf "${Purple}$(./php --ri maxminddb | head -n 6)${Color_Off}\n"
+	printf "${Purple}$(./php --ri maxminddb | head -n 6)${Color_Off}\n"
 fi
 
 service php-${brel}-fpm restart && \
