@@ -257,7 +257,7 @@ ln -s $clibc $libc
 fi
 
 if [ "$cont" = "yes" ]; then
-printf "${Yellow}Removing previous ${brel} release..${Color_Off}\n"
+printf "${Yellow}Removing previous ${brel} release...${Color_Off}\n"
 /etc/init.d/php-${brel}-fpm force-quit 2>/dev/null
 update-rc.d php-${brel}-fpm disable 2>/dev/null
 systemctl stop php-${brel}-fpm 2>/dev/null
@@ -283,6 +283,7 @@ rm -rf php-${brel}.tar.bz2
 mv $php_release php-${brel}
 cd php-${brel}/
 
+printf "${Yellow}Testing PHP configuration...${Color_Off}\n"
 if [[ ${brel} =~ 7.[1-3].* ]]; then
 ./configure --prefix=$php_path --with-pdo-pgsql --with-zlib-dir \
 --with-freetype-dir --enable-mbstring --with-libxml-dir=/usr --enable-soap \
