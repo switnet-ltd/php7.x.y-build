@@ -634,10 +634,12 @@ echo "We have found the following Nextcloud instances using PHP $rel:"
 NC_INST="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 -le 8992 -le 8991 -le 8999)"
 printf "${Green}$NC_INST${Color_Off}\n"
 
-if [[ ${brel} = 7.[3-4].X ]]; then
-		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|"
-	elif [[ ${brel} = 7.[3-4].X_mbuild ]]; then
+if [[ ${brel} = 7.3.X ]] || [[ ${brel} = 7.4.X ]]; then
 		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+		sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|" $PHP_POOL_DIR/nextcloud_${brel}.conf
+	elif [[ ${brel} = 7.3.X_mbuild ]] || [[ ${brel} = 7.4.X_mbuild ]]; then
+		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|"
+		sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|" $PHP_POOL_DIR/nextcloud_${brel}.conf
 	else 
 		echo "Error configuring apache, please report it."
 fi
