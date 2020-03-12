@@ -79,7 +79,7 @@ TITLE="Select PHP 7 version to compile."
 MENU="
 Choose one of the following supported PHP releases:"
 
-OPTIONS=(1 "7.1.X"
+OPTIONS=(1 "7.1.X - EOL"
          2 "7.2.X"
          3 "7.3.X"
          4 "7.4.X"
@@ -95,7 +95,7 @@ CHOICE=$(dialog --clear \
 
 case $CHOICE in
         1)
-            printf "We'll schedule build of: ${Green} 7.1.X ${Color_Off}\n"
+            printf "We'll schedule build of: ${Red} 7.1.X ${Color_Off}\n"
             rel="7.1"
             ;;
         2)
@@ -310,8 +310,9 @@ if [[ ${brel} =~ 7.4.* ]]; then
 --with-mysqli --with-mysql-sock=/var/run/mysqld/mysqld.sock --with-jpeg \
 --with-openssl --with-fpm-user=www-data --with-fpm-group=www-data \
 --with-libdir=/lib/x86_64-linux-gnu --enable-ftp --with-imap \
---with-imap-ssl --with-kerberos --with-gettext --with-xmlrpc --with-xsl \
---enable-opcache --enable-intl --with-pear --enable-fpm | grep "Thank you for using PHP."
+--with-imap-ssl  --with-readline --with-kerberos --with-gettext \
+--with-xmlrpc --with-xsl --enable-opcache --enable-intl --with-pear \
+--enable-fpm | grep "Thank you for using PHP."
 fi
 
 if [ $? == 0 ]; then
