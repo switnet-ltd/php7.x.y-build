@@ -71,6 +71,8 @@ install_ifnot re2c
 install_ifnot wget
 
 #Selector
+ws_sites=/etc/*/sites-enabled/
+HSTS_VAR="$(grep -nr 'max-age=15768000;includeSubdomains' $ws_sites)"
 HEIGHT=15
 WIDTH=65
 CHOICE_HEIGHT=4
@@ -78,11 +80,15 @@ BACKTITLE="PHP 7.x.y selector"
 TITLE="Select PHP 7 version to compile."
 MENU="
 Choose one of the following supported PHP releases:"
-
+MENU2="
+What kind of installation would you like to install:"
 OPTIONS=(1 "7.1.X - EOL"
          2 "7.2.X"
          3 "7.3.X"
          4 "7.4.X"
+         )
+OPTIONS_NCSTN=(1 "Hosting Platform (ISPConfig)"
+         2 "Nextcloud Standalone"
          )
 
 CHOICE=$(dialog --clear \
@@ -115,17 +121,47 @@ case $CHOICE in
             exit
             ;;
 esac
+
 if [ "$rel" = "7.3" ] || [ "$rel" = "7.4" ]; then
-dialog --stdout --title "PHP Build Mode" \
-  --backtitle "PHP 7" \
-  --yesno "Is this a standalone Nextcloud instance? (NOT shared hosted)" 7 60
-response=$?
-case $response in
-   0) NC_BUILD=yes ;;
-   1) NC_BUILD=no ;;
-   255) echo "[ESC] key pressed.";;
+
+CHOICE2=$(dialog --clear \
+                --backtitle "$BACKTITLE" \
+                --title "$TITLE" \
+                --menu "$MENU2" \
+                $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                "${OPTIONS_NCSTN[@]}" \
+                3>&1 1>&2 2>&3 3>&- )
+
+case $CHOICE in
+        1)
+            printf "We'll schedule build for a ${Blue} Hosting Platform ${Color_Off}\n"
+            NC_BUILD=no
+            ;;
+        2)
+            printf "We'll schedule build for a ${Blue} Nextcloud Standalone ${Color_Off}\n"
+            NC_BUILD=yes
+            ;;
+        *)
+            printf "Operation canceled, exiting...\n"
+            exit
+            ;;
 esac
 fi
+if [[ NC_BUILD = yes && -z $HSTS_VAR ]]; then
+	echo 'Seems there is no Nextcloud instance running.
+	Do you wanna continue? (yes o no)'
+	while [[ $cont_nc != yes && $cont_nc != no ]]
+	do
+		read cont_nc
+	if [ $cont_nc = no ]; then
+		echo "Ok, come back when you are ready."
+		exit
+	elif [ $cont_nc = yes ]; then
+		echo "Let's get to it ..."
+	fi
+	done
+fi
+
 dialog --stdout --title "PHP Extension" \
   --backtitle "PHP 7" \
   --yesno "Do you need support for MaxMind?" 7 60
@@ -135,6 +171,7 @@ case $response in
    1) MXMIND=no ;;
    255) echo "[ESC] key pressed.";;
 esac
+
 dialog --stdout --title "PHP Extension" \
   --backtitle "PHP 7" \
   --yesno "Do you need support for APCu?" 7 60
@@ -144,6 +181,7 @@ case $response in
    1) APCU=no ;;
    255) echo "[ESC] key pressed.";;
 esac
+
 # Set variables for standar behavior
 php_release=$(curl -s https://www.php.net/downloads.php | grep "php-${rel}" | cut -d\> -f2 | grep ${rel} | head -n1 | cut -d "<" -f1 | awk -F '.tar.bz2' '{print $1}')
 # $rel var set by dialog
