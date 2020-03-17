@@ -10,6 +10,8 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+#DEBUG
+#set -x
 # Reset
 Color_Off='\e[0m'       # Text Reset
 # Regular Colors
