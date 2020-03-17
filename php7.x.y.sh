@@ -134,7 +134,7 @@ CHOICE2=$(dialog --clear \
                 "${OPTIONS_NCSTN[@]}" \
                 3>&1 1>&2 2>&3 3>&- )
 
-case $CHOICE in
+case $CHOICE2 in
         1)
             printf "We'll schedule build for a ${Blue} Hosting Platform ${Color_Off}\n"
             NC_BUILD=no
