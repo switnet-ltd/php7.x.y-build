@@ -11,7 +11,9 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #DEBUG
-#set -x
+if [ $1 = debug ]; then
+set -x
+fi
 # Reset
 Color_Off='\e[0m'       # Text Reset
 # Regular Colors
@@ -149,7 +151,7 @@ case $CHOICE2 in
             ;;
 esac
 fi
-if [[ NC_BUILD = yes && -z $HSTS_VAR ]]; then
+if [[ $NC_BUILD = yes && -z $HSTS_VAR ]]; then
 	echo 'Seems there is no Nextcloud instance running.
 	Do you wanna continue? (yes o no)'
 	while [[ $cont_nc != yes && $cont_nc != no ]]
@@ -260,6 +262,7 @@ memc_path=$php_path/php-memcached-${brel}
 mxmd_path=$php_path/php-maxmind-${brel}
 apcu_path=$php_path/php-acpu-${brel}
 php_bin=$php_path/bin
+runpd=/run/php
 
 printf "${Yellow}# Installing dependencies...${Color_Off}\n"
 if  [ "$DIST" = "xenial" ]; then
@@ -589,7 +592,9 @@ dialog --title "PHP ${brel} services active" --msgbox \
 PHP_POOL_DIR=/opt/php-${brel}/etc/php-fpm.d
 PHP_INI=/opt/php-${brel}/lib/php.ini
 NC_SYSTEM_FILE=/lib/systemd/system/nc_php-${brel}-fpm.service
-mkdir /run/php
+if [ ! -d $runpd ];then
+mkdir $runpd
+fi
 average_php_memory_requirement=50
 available_memory=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
 PHP_FPM_MAX_CHILDREN=$((available_memory/average_php_memory_requirement))
