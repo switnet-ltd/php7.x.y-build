@@ -10,8 +10,17 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+while getopts m: option
+do
+	case "${option}"
+	in
+		m) MODE=${OPTARG};;
+		\?) echo "Usage: sudo ./php7.x.y.sh [-m debug]" && exit;;
+	esac
+done
+
 #DEBUG
-if [ $1 = debug ]; then
+if [ "$MODE" = "debug" ]; then
 set -x
 fi
 # Reset
