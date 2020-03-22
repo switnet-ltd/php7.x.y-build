@@ -241,7 +241,11 @@ else
 		read cont
 		if [ "$cont" = "no" ]; then
 			printf " --> Do you want compile a maintenance build ( ${Blue}_mbuild ${Color_Off} )? (yes o no)\n"
-			printf "\nCurrent ${Cyan}maintenance${Color_Off} buid installed php-${brel}: ${Yellow} $(</opt/php-${brel}_mbuild/current-php)${Color_Off}\n"
+			if [ -f /opt/php-${brel}_mbuild/current-php ]; then
+				printf "     Current ${Cyan}maintenance${Color_Off} buid installed php-${brel}: ${Yellow} $(</opt/php-${brel}_mbuild/current-php)${Color_Off}\n"
+			else
+				printf "     Seems this will be the first time a ${Cyan}maintenance build${Color_Off} for ${Green}php-${brel}${Color_Off} gets build.\n"
+			fi
 			while [[ "$mbuild" != "yes" && "$mbuild" != "no" ]]
 			do
 			read mbuild
