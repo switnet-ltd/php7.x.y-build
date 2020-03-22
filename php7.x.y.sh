@@ -252,7 +252,7 @@ else
 			if [ "$mbuild" = "yes" ]; then
 				cont="yes"
 				man_build="_mbuild"
-				echo "Building php-${brel}"
+				echo "Building php-${brel}_mbuild"
 			elif [ "$mbuild" = "no" ]; then
 				echo "No build resolved, see you next time."
 				exit
