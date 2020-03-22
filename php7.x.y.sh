@@ -94,7 +94,7 @@ TITLE="Select PHP 7 version to compile."
 MENU="
 Choose one of the following supported PHP releases:"
 MENU2="
-What kind of installation would you like to install:"
+What kind of installation would you like to setup:"
 OPTIONS=(1 "7.1.X - EOL"
          2 "7.2.X"
          3 "7.3.X"
@@ -136,10 +136,10 @@ case $CHOICE in
 esac
 
 if [ "$rel" = "7.3" ] || [ "$rel" = "7.4" ]; then
-
+TITLE2="Select PHP $rel usage to compile."
 CHOICE2=$(dialog --clear \
                 --backtitle "$BACKTITLE" \
-                --title "$TITLE" \
+                --title "$TITLE2" \
                 --menu "$MENU2" \
                 $HEIGHT $WIDTH $CHOICE_HEIGHT \
                 "${OPTIONS_NCSTN[@]}" \
@@ -175,7 +175,7 @@ if [[ $NC_BUILD = yes && -z $HSTS_VAR ]]; then
 	done
 fi
 
-dialog --stdout --title "PHP Extension" \
+dialog --stdout --title "PHP $rel Extension" \
   --backtitle "PHP 7" \
   --yesno "Do you need support for MaxMind?" 7 60
 response=$?
@@ -185,7 +185,7 @@ case $response in
    255) echo "[ESC] key pressed.";;
 esac
 
-dialog --stdout --title "PHP Extension" \
+dialog --stdout --title "PHP $rel Extension" \
   --backtitle "PHP 7" \
   --yesno "Do you need support for APCu?" 7 60
 response=$?
