@@ -289,8 +289,8 @@ fi
 if [ "$DIST" = "bionic" ]; then
 apt -yqq install libfcgi-dev libfcgi0ldbl libjpeg-turbo8-dev libmcrypt-dev \
 libssl-dev libc-client2007e libc-client2007e-dev libxml2-dev libbz2-dev \
-libcurl4-openssl-dev libjpeg-dev libpng-dev libfreetype6-dev libkrb5-dev \
-libpq-dev libxml2-dev libxslt1-dev libzip-dev libsqlite3-dev \
+libcurl4-openssl-dev libjpeg-dev libpng-dev libfreetype6-dev libreadline-dev \
+libkrb5-dev libpq-dev libxml2-dev libxslt1-dev libzip-dev libsqlite3-dev \
 libonig-dev &>/dev/null
 fi
 
@@ -456,7 +456,7 @@ systemctl start php-${brel}-fpm.service
 printf "\n${Yellow}Adding Redis Support${Color_Off}\n
 Deleting previous builds"
 rm -rf $redis_path
-apt-get install -yqq redis-server
+install_ifnot redis-server
 git clone -b develop https://github.com/phpredis/phpredis.git $redis_path
 cd $redis_path ; $php_bin/phpize
 PATH=$php_bin:$PATH ./configure -q
@@ -473,7 +473,7 @@ PHP_RS
 printf "\n${Yellow}Adding IMagick Support${Color_Off}\n
 Deleting previous builds"
 rm -rf $imagick_path
-apt-get install -yqq libmagickwand-dev
+install_ifnot libmagickwand-dev
 git clone -b master https://github.com/mkoppanen/imagick.git $imagick_path
 cd $imagick_path ; $php_bin/phpize
 PATH=$php_bin:$PATH ./configure -q
@@ -487,6 +487,7 @@ extension=imagick.so' >> $php_path/lib/php.ini
 printf "\n${Yellow}Adding IMagick Support${Color_Off}\n
 Deleting previous builds"
 rm -rf $memc_path
+install_ifnot libmemcached-dev
 git clone -b master https://github.com/php-memcached-dev/php-memcached $memc_path
 cd $memc_path ; $php_bin/phpize
 PATH=$php_bin:$PATH ./configure --with-php-config=$php_bin/php-config -q
