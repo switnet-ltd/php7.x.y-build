@@ -198,7 +198,7 @@ esac
 # Set variables for standar behavior
 php_release=$(curl -s https://www.php.net/downloads.php | grep "php-${rel}" | cut -d\> -f2 | grep ${rel} | head -n1 | cut -d "<" -f1 | awk -F '.tar.bz2' '{print $1}')
 # $rel var set by dialog
-brel="${rel}.X${man_build}"
+brel="${rel}.X"
 php_path=/opt/php-${brel}
 cpv="$php_path/current-php"
 libc=/usr/lib/x86_64-linux-gnu/libc-client.a
@@ -241,6 +241,7 @@ else
 		read cont
 		if [ "$cont" = "no" ]; then
 			printf " --> Do you want compile a maintenance build ( ${Blue}_mbuild ${Color_Off} )? (yes o no)\n"
+			printf "\nCurrent ${Cyan}maintenance${Color_Off} buid installed php-${brel}: ${Yellow} $(</opt/php-${brel}_mbuild/current-php)${Color_Off}\n"
 			while [[ "$mbuild" != "yes" && "$mbuild" != "no" ]]
 			do
 			read mbuild
