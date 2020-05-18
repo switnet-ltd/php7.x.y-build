@@ -59,6 +59,8 @@ fi
 
 #System requiments
 DIST=$(lsb_release -sc)
+APACHE_2=$(dpkg-query -W -f='${Status}' apache2 2>/dev/null | grep -c "ok installed")
+NGINX=$(dpkg-query -W -f='${Status}' nginx 2>/dev/null | grep -c "ok installed")
 if [ $DIST = flidas ]; then
 	DIST="xenial"
 fi
@@ -73,6 +75,19 @@ else
 Sorry, this platform is not supported... exiting\n"
 exit
 fi
+
+check_serv() {
+if [ "$APACHE_2" -eq 1 ]; then
+WS_IS="apache2"
+elif [ "$NGINX" -eq 1 ]; then
+WS_IS="nginx"
+else
+echo \
+"We have not identified your webserver you might need to restart it manually."
+WS_IS="ukn"
+fi
+}
+
 apt update -q2
 install_ifnot autoconf
 install_ifnot build-essential
@@ -84,8 +99,9 @@ install_ifnot re2c
 install_ifnot wget
 
 #Selector
-ws_sites=/etc/*/sites-enabled/
-HSTS_VAR="$(grep -nr 'max-age=15768000;includeSubdomains' $ws_sites)"
+check_serv
+ws_sites=/etc/${WS_IS}/sites-enabled/
+HSTS_VAR="$(grep -nR 'Dav off\|occ' $ws_sites)"
 HEIGHT=15
 WIDTH=65
 CHOICE_HEIGHT=4
@@ -553,8 +569,10 @@ if [ "$MXMIND" = "yes" ]; then
 	printf "${Purple}$(./php --ri maxminddb | head -n 6)${Color_Off}\n"
 fi
 
-service php-${brel}-fpm restart && \
-service apache2 restart
+service php-${brel}-fpm restart
+if [ ! $WS_IS = "ukn" ];then
+service $WS_IS restart
+fi
 
 ########################################################################
 #                 Nextcloud configuration                              #
@@ -562,7 +580,10 @@ service apache2 restart
 if [ "${NC_BUILD}" = "yes" ]; then
 
 dialog --title "PHP ${brel} services active" --msgbox \
-"$(netstat -lp | grep 899 | awk '{print $4}'| sed -e "s|localhost:899[1,2]|php-${brel} - Maintenance Build|" -e "s|localhost:899[5,9]|php-${brel} - Production Build|")" \
+"$(netstat -lp | \
+grep 899 | awk '{print $4}'| \
+sed -e "s|localhost:899[1,2]|php-${brel} - Maintenance Build|" \
+    -e "s|localhost:899[5,9]|php-${brel} - Production Build|")" \
 7 50
 #printf "${Cyan}$(netstat -lp | grep 899 | awk '{print $4}'| \
 #		sed -e "s|localhost:8992|php-7.3.X_mbuild - Maintenance Build|" -e \
@@ -630,8 +651,9 @@ fi
 calculate_max_children
 systemctl stop php-${brel}-fpm.service
 systemctl disable php-${brel}-fpm.service
+if [ WS_IS = "apache2" ]; then
 a2enmod proxy proxy_fcgi
-
+fi
 # Set up a php-fpm pool with a unixsocket
 cat << POOL_CONF > "$PHP_POOL_DIR/nextcloud_${brel}.conf"
 [Nextcloud ${brel} ]
@@ -693,23 +715,40 @@ systemctl start nc_php-${brel}-fpm.service
 ##Set Apache2 file
 echo "We have found the following Nextcloud instances using PHP $rel:"
 NC_INST="$(grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 -le 8992 -le 8991 -le 8999)"
+NX_NC_INST="$(grep -r "occ" /etc/nginx/sites-enabled/* | cut -d ":" -f1 | xargs -L1 grep -le 8995 -le 8992 -le 8991 -le 8999)"
+if [ $WS_IS = "apache2" ];then
 printf "${Green}$NC_INST${Color_Off}\n"
+elif [ $WS_IS = "nginx" ];then
+printf "${Green}$NX_NC_INST${Color_Off}\n"
+else
+echo "We can't determine your web server please make adjustmenst manually."
+fi
 
 if [[ ${brel} = 7.3.X ]] || [[ ${brel} = 7.4.X ]]; then
-		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+		if [ $WS_IS = "apache2" ]; then
+		grep -r "Dav off" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+		elif [ $WS_IS = "nginx" ]; then
+		grep -r "occ" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+		fi
 		sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|" $PHP_POOL_DIR/nextcloud_${brel}.conf
 	elif [[ ${brel} = 7.3.X_mbuild ]] || [[ ${brel} = 7.4.X_mbuild ]]; then
-		grep -r "Dav off" /etc/apache2/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|"
+		if [ $WS_IS = "apache2" ]; then
+		grep -r "Dav off" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|"
+		elif [ $WS_IS = "nginx" ]; then
+		grep -r "occ" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT;|"
+		fi
 		sed -i "s|127.0.0.1:.*|127.0.0.1:$MPORT|" $PHP_POOL_DIR/nextcloud_${brel}.conf
 	else 
-		echo "Error configuring apache, please report it."
+		echo "Error configuring ${WS_IS}, please report it."
 fi
 
 
-service nc_php-${brel}-fpm restart && \
-service apache2 restart
+service nc_php-${brel}-fpm restart
+if [ ! $WS_IS = "ukn" ];then
+service $WS_IS restart
 fi
 
+fi
 echo "Creating symlinks..."
 create_symlink() {
 	if [ -f $1 ]; then
