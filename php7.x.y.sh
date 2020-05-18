@@ -1,6 +1,7 @@
 #!/bin/bash
 #  php-7.x.y installer for Trisquel / Ubuntu LTS
-#  SwITNet Ltd © - 2019, https://switnet.net/
+#  SwITNet Ltd © - 2020, https://switnet.net/
+#  T&M Hansson IT AB © - 2020, https://www.hanssonit.se/
 #
 #  This script installs the build dependancies for php-7.x.y and looks
 #  for previous installations it's intended to be used with ISPConfig3.
