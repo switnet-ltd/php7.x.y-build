@@ -102,7 +102,7 @@ install_ifnot wget
 #Selector
 check_serv
 ws_sites=/etc/${WS_IS}/sites-enabled/
-HSTS_VAR="$(grep -nR 'Dav off\|occ' $ws_sites)"
+DISCOVER_NC="$(grep -nR 'Dav off\|occ' $ws_sites)"
 HEIGHT=15
 WIDTH=65
 CHOICE_HEIGHT=4
@@ -177,7 +177,7 @@ case $CHOICE2 in
             ;;
 esac
 fi
-if [[ $NC_BUILD = yes && -z $HSTS_VAR ]]; then
+if [[ $NC_BUILD = yes && -z $DISCOVER_NC ]]; then
 	echo 'Seems there is no Nextcloud instance running.
 	Do you wanna continue? (yes o no)'
 	while [[ $cont_nc != yes && $cont_nc != no ]]
@@ -729,7 +729,7 @@ if [[ ${brel} = 7.3.X ]] || [[ ${brel} = 7.4.X ]]; then
 		if [ $WS_IS = "apache2" ]; then
 		grep -r "Dav off" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
 		elif [ $WS_IS = "nginx" ]; then
-		grep -r "occ" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|"
+		grep -r "occ" /etc/${WS_IS}/sites-enabled/* | cut -d ":" -f1  | xargs -L1 sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT;|"
 		fi
 		sed -i "s|127.0.0.1:.*|127.0.0.1:$UPORT|" $PHP_POOL_DIR/nextcloud_${brel}.conf
 	elif [[ ${brel} = 7.3.X_mbuild ]] || [[ ${brel} = 7.4.X_mbuild ]]; then
